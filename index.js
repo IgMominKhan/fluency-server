@@ -103,6 +103,28 @@ const client = new MongoClient(uri, {
     });
 
     // cart APIs
+    app.get("/cart", verifyJWT, async (req, res) => {
+      const decodedUser = req.decoded.user;
+      const email = req.query.email;
+
+      console.log(decodedUser, email);
+
+      if (email !== decodedUser) {
+        return res.status(403).send({
+          error: true,
+          message: "forbidden access",
+        });
+      }
+
+      const query = {
+        student_email: decodedUser,
+        student_status: req.query.status,
+      };
+      console.log(query);
+      const result = await cartCollection.find(query).toArray();
+      console.log(result);
+      res.send(result);
+    });
     app.post("/cart", verifyJWT, async (req, res) => {
       const decodedUser = req.decoded.user;
       const email = req.query.email;
