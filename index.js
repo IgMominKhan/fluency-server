@@ -87,6 +87,14 @@ const client = new MongoClient(uri, {
     });
 
     app.post("/users", async (req, res) => {
+      const query = {
+        email: req.body?.email,
+      };
+
+      const isExist = await userCollection.findOne(query);
+      if (isExist) {
+        return res.send({ user: isExist });
+      }
       const newUser = req.body;
       const result = await userCollection.insertOne(newUser);
       res.send(result);
@@ -135,7 +143,7 @@ const client = new MongoClient(uri, {
 
       const query = { email };
       const user = await userCollection.findOne(query);
-      console.log(user)
+      console.log(user);
       const role = user?.role;
       res.send({ role });
     });
