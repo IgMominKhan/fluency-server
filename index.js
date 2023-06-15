@@ -121,6 +121,25 @@ const client = new MongoClient(uri, {
       res.send(result);
     });
 
+    // decect role
+    app.get("/users/user", verifyJWT, async (req, res) => {
+      const decodedUser = req.decoded.user;
+      const email = req.query.email;
+
+      if (email !== decodedUser) {
+        return res.status(403).send({
+          error: true,
+          message: "forbidden access",
+        });
+      }
+
+      const query = { email };
+      const user = await userCollection.findOne(query);
+      console.log(user)
+      const role = user?.role;
+      res.send({ role });
+    });
+
     // classes API
     app.get("/classes", async (req, res) => {
       let query = {};
