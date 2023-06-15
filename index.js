@@ -1,7 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const jwt = require("jsonwebtoken");
 
 // create express app
@@ -92,6 +92,35 @@ const client = new MongoClient(uri, {
       res.send(result);
     });
 
+    // verify is admin
+    app.get("/users/admin/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        res.send({ admin: false });
+      }
+
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const result = { admin: user?.role === "admin" };
+      res.send(result);
+    });
+
+    // verify is instructor
+
+    app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        res.send({ admin: false });
+      }
+
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const result = { instructor: user?.role === "instructor" };
+      res.send(result);
+    });
+
     // classes API
     app.get("/classes", async (req, res) => {
       let query = {};
@@ -107,8 +136,6 @@ const client = new MongoClient(uri, {
       const decodedUser = req.decoded.user;
       const email = req.query.email;
 
-      console.log(decodedUser, email);
-
       if (email !== decodedUser) {
         return res.status(403).send({
           error: true,
@@ -120,11 +147,10 @@ const client = new MongoClient(uri, {
         student_email: decodedUser,
         student_status: req.query.status,
       };
-      console.log(query);
       const result = await cartCollection.find(query).toArray();
-      console.log(result);
       res.send(result);
     });
+
     app.post("/cart", verifyJWT, async (req, res) => {
       const decodedUser = req.decoded.user;
       const email = req.query.email;
@@ -152,6 +178,27 @@ const client = new MongoClient(uri, {
       const newItem = req.body;
 
       const result = await cartCollection.insertOne(newItem);
+      res.send(result);
+    });
+
+    app.delete("/cart/:id", verifyJWT, async (req, res) => {
+      const decodedUser = req.decoded.user;
+      const email = req.query.email;
+
+      console.log(decodedUser, email);
+
+      if (email !== decodedUser) {
+        return res.status(403).send({
+          error: true,
+          message: "forbidden access",
+        });
+      }
+
+      const filter = {
+        _id: new ObjectId(req.params.id),
+      };
+
+      const result = await cartCollection.deleteOne(filter);
       res.send(result);
     });
   } finally {
