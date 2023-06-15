@@ -100,15 +100,30 @@ const client = new MongoClient(uri, {
       res.send(result);
     });
 
+    app.patch("/users/:id", verifyJWT, async (req, res) => {
+      const userId = req.params.id;
+      const newRole = req.body.role;
+      const filter = { _id: new ObjectId(userId) };
+      const result = await userCollection.updateOne(filter, {
+        $set: {
+          role: newRole,
+        },
+      });
+
+      console.log(userId, newRole, result);
+
+      res.send(result);
+    });
     // verify is admin
     app.get("/users/admin/:email", verifyJWT, async (req, res) => {
-      const email = req.params.email;
+      const email = req.params?.email;
+      const decodedUser = req.decoded?.user;
 
-      if (req.decoded.email !== email) {
-        res.send({ admin: false });
+      if (decodedUser !== email) {
+        res.status(403).send({ error: true, message: "Forbidden acccess" });
       }
 
-      const query = { email: email };
+      const query = { email };
       const user = await userCollection.findOne(query);
       const result = { admin: user?.role === "admin" };
       res.send(result);
