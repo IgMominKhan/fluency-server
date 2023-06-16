@@ -173,6 +173,33 @@ const client = new MongoClient(uri, {
       res.send(result);
     });
 
+    const verifyValidUser = (req, res, next) => {
+      const decodedUser = req.decoded.user;
+      const email = req.query.email;
+
+      if (email !== decodedUser) {
+        return res.status(403).send({
+          error: true,
+          message: "forbidden access",
+        });
+      }
+      next();
+    };
+
+    app.patch("/classes/:id", verifyJWT, verifyValidUser, async (req, res) => {
+      const id = req.params.id;
+      const newStatus = req.body.status;
+      const query = {
+        _id: new ObjectId(id),
+      };
+      const result = await classCollection.updateOne(query, {
+        $set: {
+          status: newStatus,
+        },
+      });
+
+      res.send(result);
+    });
     // cart APIs
     app.get("/cart", verifyJWT, async (req, res) => {
       const decodedUser = req.decoded.user;
