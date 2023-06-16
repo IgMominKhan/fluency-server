@@ -37,18 +37,18 @@ const verifyJWT = (req, res, next) => {
 };
 
 // verify user valid data access
-    const verifyValidUser = (req, res, next) => {
-      const decodedUser = req.decoded.user;
-      const email = req.query.email;
-      console.log(email, decodedUser);
-      if (email !== decodedUser) {
-        return res.status(403).send({
-          error: true,
-          message: "forbidden access",
-        });
-      }
-      next();
-    };
+const verifyValidUser = (req, res, next) => {
+  const decodedUser = req.decoded.user;
+  const email = req.query.email;
+  console.log(email, decodedUser);
+  if (email !== decodedUser) {
+    return res.status(403).send({
+      error: true,
+      message: "forbidden access",
+    });
+  }
+  next();
+};
 
 // create jwt
 app.post("/jwt", (req, res) => {
@@ -126,7 +126,7 @@ const client = new MongoClient(uri, {
 
       res.send(result);
     });
-    
+
     // verify is admin
     app.get("/users/admin/:email", verifyJWT, async (req, res) => {
       const email = req.params?.email;
@@ -158,9 +158,8 @@ const client = new MongoClient(uri, {
     });
 
     // decect role
-    app.get("/users/user", verifyJWT,verifyValidUser, async (req, res) => {
-
-      const query = { email };
+    app.get("/users/user", verifyJWT, verifyValidUser, async (req, res) => {
+      const query = { email: req.query?.email };
       const user = await userCollection.findOne(query);
       const role = user?.role;
       res.send({ role });
@@ -175,24 +174,28 @@ const client = new MongoClient(uri, {
       const result = await classCollection.find(query).toArray();
       res.send(result);
     });
-    
+
     app.patch("/classes/:id", verifyJWT, verifyValidUser, async (req, res) => {
       const id = req.params.id;
       const newStatus = req.body.status;
+      const feedback = req.body.feedback;
       const query = {
         _id: new ObjectId(id),
       };
+
+      let newData = {};
+      if (newStatus) newData.status = newStatus;
+      if (feedback) newData.feedback = feedback;
+
       const result = await classCollection.updateOne(query, {
-        $set: {
-          status: newStatus,
-        },
+        $set: newData,
       });
 
       res.send(result);
     });
-    
+
     // cart APIs
-    app.get("/cart", verifyJWT,verifyValidUser, async (req, res) => {
+    app.get("/cart", verifyJWT, verifyValidUser, async (req, res) => {
       const decodedUser = req.decoded.user;
 
       const query = {
@@ -203,8 +206,7 @@ const client = new MongoClient(uri, {
       res.send(result);
     });
 
-    app.post("/cart", verifyJWT,verifyValidUser, async (req, res) => {
-
+    app.post("/cart", verifyJWT, verifyValidUser, async (req, res) => {
       const query = {
         student_email: req.query.email,
         class_id: req.body.class_id,
@@ -221,8 +223,7 @@ const client = new MongoClient(uri, {
       res.send(result);
     });
 
-    app.delete("/cart/:id", verifyJWT,verifyValidUser, async (req, res) => {
-
+    app.delete("/cart/:id", verifyJWT, verifyValidUser, async (req, res) => {
       const filter = {
         _id: new ObjectId(req.params.id),
       };
