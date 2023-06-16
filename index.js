@@ -36,6 +36,20 @@ const verifyJWT = (req, res, next) => {
   next();
 };
 
+// verify user valid data access
+    const verifyValidUser = (req, res, next) => {
+      const decodedUser = req.decoded.user;
+      const email = req.query.email;
+      console.log(email, decodedUser);
+      if (email !== decodedUser) {
+        return res.status(403).send({
+          error: true,
+          message: "forbidden access",
+        });
+      }
+      next();
+    };
+
 // create jwt
 app.post("/jwt", (req, res) => {
   const email = req.body.email;
@@ -110,10 +124,9 @@ const client = new MongoClient(uri, {
         },
       });
 
-      console.log(userId, newRole, result);
-
       res.send(result);
     });
+    
     // verify is admin
     app.get("/users/admin/:email", verifyJWT, async (req, res) => {
       const email = req.params?.email;
@@ -145,20 +158,10 @@ const client = new MongoClient(uri, {
     });
 
     // decect role
-    app.get("/users/user", verifyJWT, async (req, res) => {
-      const decodedUser = req.decoded.user;
-      const email = req.query.email;
-
-      if (email !== decodedUser) {
-        return res.status(403).send({
-          error: true,
-          message: "forbidden access",
-        });
-      }
+    app.get("/users/user", verifyJWT,verifyValidUser, async (req, res) => {
 
       const query = { email };
       const user = await userCollection.findOne(query);
-      console.log(user);
       const role = user?.role;
       res.send({ role });
     });
@@ -172,20 +175,7 @@ const client = new MongoClient(uri, {
       const result = await classCollection.find(query).toArray();
       res.send(result);
     });
-
-    const verifyValidUser = (req, res, next) => {
-      const decodedUser = req.decoded.user;
-      const email = req.query.email;
-
-      if (email !== decodedUser) {
-        return res.status(403).send({
-          error: true,
-          message: "forbidden access",
-        });
-      }
-      next();
-    };
-
+    
     app.patch("/classes/:id", verifyJWT, verifyValidUser, async (req, res) => {
       const id = req.params.id;
       const newStatus = req.body.status;
@@ -200,17 +190,10 @@ const client = new MongoClient(uri, {
 
       res.send(result);
     });
+    
     // cart APIs
-    app.get("/cart", verifyJWT, async (req, res) => {
+    app.get("/cart", verifyJWT,verifyValidUser, async (req, res) => {
       const decodedUser = req.decoded.user;
-      const email = req.query.email;
-
-      if (email !== decodedUser) {
-        return res.status(403).send({
-          error: true,
-          message: "forbidden access",
-        });
-      }
 
       const query = {
         student_email: decodedUser,
@@ -220,18 +203,7 @@ const client = new MongoClient(uri, {
       res.send(result);
     });
 
-    app.post("/cart", verifyJWT, async (req, res) => {
-      const decodedUser = req.decoded.user;
-      const email = req.query.email;
-
-      console.log(decodedUser, email);
-
-      if (email !== decodedUser) {
-        return res.status(403).send({
-          error: true,
-          message: "forbidden access",
-        });
-      }
+    app.post("/cart", verifyJWT,verifyValidUser, async (req, res) => {
 
       const query = {
         student_email: req.query.email,
@@ -239,7 +211,6 @@ const client = new MongoClient(uri, {
       };
       console.log(query);
       const isExist = await cartCollection.findOne(query);
-      console.log(isExist);
       if (isExist) {
         return res.send({ message: "already exist" });
       }
@@ -250,18 +221,7 @@ const client = new MongoClient(uri, {
       res.send(result);
     });
 
-    app.delete("/cart/:id", verifyJWT, async (req, res) => {
-      const decodedUser = req.decoded.user;
-      const email = req.query.email;
-
-      console.log(decodedUser, email);
-
-      if (email !== decodedUser) {
-        return res.status(403).send({
-          error: true,
-          message: "forbidden access",
-        });
-      }
+    app.delete("/cart/:id", verifyJWT,verifyValidUser, async (req, res) => {
 
       const filter = {
         _id: new ObjectId(req.params.id),
