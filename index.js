@@ -145,13 +145,14 @@ const client = new MongoClient(uri, {
     // verify is instructor
 
     app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
-      const email = req.params.email;
+      const email = req?.params?.email;
+      const decodedUser = req?.decoded?.user;
 
-      if (req.decoded.email !== email) {
-        res.send({ admin: false });
+      if (decodedUser !== email) {
+        res.status(403).send({ error: true, message: "Forbidden acccess" });
       }
 
-      const query = { email: email };
+      const query = { email };
       const user = await userCollection.findOne(query);
       const result = { instructor: user?.role === "instructor" };
       res.send(result);
@@ -171,7 +172,16 @@ const client = new MongoClient(uri, {
       if (req.query.status) {
         query.status = req.query.status;
       }
+      if (req.query.email) {
+        query.email = req.query.email;
+      }
       const result = await classCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    app.post("/classes", verifyJWT, verifyValidUser, async (req, res) => {
+      console.log(req.body);
+      const result = await classCollection.insertOne(req.body);
       res.send(result);
     });
 
